@@ -13,5 +13,5 @@ Scripts related to generic networking. Testing some websocketing and more.
 Oat's Nmapper - A kind of wrapper for nmap
 Run script with same privileges as you would run nmap
 
-#Tested systems:
+Tested on systems:
 * FreeBSD
