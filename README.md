@@ -15,3 +15,13 @@ Run script with same privileges as you would run nmap
 
 Tested on systems:
 * FreeBSD
+
+To improve in code:
+* Fix the logic to not use dup code and overuse of continues.
+
+To improve in skills:
+* Better up system analysis and design to present logic before translating
+  to code.
+
+To improve in coding tools:
+* Start with some kind of tests to not have to retype every run
