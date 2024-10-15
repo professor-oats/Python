@@ -22,3 +22,6 @@ To improve in code:
 To improve in skills:
 * Better up system analysis and design to present logic before translating
   to code.
+
+To improve in coding tools:
+* Start with some kind of tests to not have to retype every run
