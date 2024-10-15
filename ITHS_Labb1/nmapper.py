@@ -408,6 +408,32 @@ def process_custom_flags(scan_flags):
         ## This part is a last check to normalize and handle the pP flags
 
         # Handle flags starting with '-p'
+        # Hail mary code dup from '-P'
+        if flag.startswith('-p'):
+          if len(flag) > 2:
+            # Handle possible arguments for '-p' flags
+            possible_arg = flag[2:]
+            if not possible_arg:
+              scan_flags.append(flag)
+              continue
+            if not possible_arg.startswith('-'):
+              if is_valid_arg_general(possible_arg):
+                print(f'"{possible_arg}" taken as argument for "{flag}"')
+                scan_flags.append(flag)
+                continue
+              print(f'"{possible_arg} is not a possible argument for "{flag[0:2]}". Skipping')
+              continue
+
+            possible_arg = flag[3:]
+            if not possible_arg:
+              scan_flags.append(flag)
+              continue
+            if is_valid_arg_general(possible_arg):
+              print(f'"{possible_arg}" taken as argument for "{flag}"')
+              scan_flags.append(flag)
+              continue
+            print(f'"{possible_arg} is not a possible argument for "{flag[0:2]}". Skipping')
+            continue
         # Handle flags starting with '-P'
         if flag.startswith('-P'):
           if len(flag) == 3 and i + 1 < len(flags):
@@ -415,7 +441,7 @@ def process_custom_flags(scan_flags):
               possible_arg = flags[i + 1]
               if possible_arg not in VALID_NMAP_FLAGS and is_valid_arg_general(possible_arg):
                 scan_flags.append(f'{flag}{possible_arg}')  # Extend the valid into the list
-                print(f'{possible_arg} taken as argument for {flag}"')
+                print(f'{possible_arg} taken as argument for {flag[0:2]}"')
                 skip_next = True  # Skip flagcheck on the argument
                 continue
             else:
