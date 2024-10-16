@@ -1,4 +1,3 @@
-## Here is the Nmapper
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import ipaddress
@@ -7,8 +6,6 @@ from datetime import datetime
 import os
 import json
 import re
-from mimetypes import inited
-
 
 def run_nmap(target, *flags_in, save_results=False):
   command = ['nmap', target] + list(flags_in)
@@ -38,18 +35,34 @@ def is_valid_ip_or_hostname(target):
 
 
 def is_valid_port_range(port_range):
-  # Regular expression to match a port range like '80-100'
-  pattern = r'^(?:[0-9]{1,5}-[0-9]{1,5})$'
+  # Updated regex to allow open-beginning ('-80') and open-ending ('80-') ranges
+  pattern = r'^(?:[0-9]{0,5}-[0-9]{0,5})$'
   match = re.match(pattern, port_range)
 
   if match:
-    start_port, end_port = map(int, port_range.split('-'))
+    ports = port_range.split('-')
+
+    # Handle open-beginning range like '-80' (assume start port is 0)
+    if ports[0] == '':
+      start_port = 0
+    else:
+      start_port = int(ports[0])
+
+    # Handle open-ending range like '80-'
+    if ports[1] == '':
+      end_port = 65535
+    else:
+      end_port = int(ports[1])
+
+    # Validate that both start and end ports are in the valid range
     return 0 <= start_port <= 65535 and 0 <= end_port <= 65535 and start_port <= end_port
+
   return False
 
+
 def is_valid_port_list(port_list):
-  # Regular expression to match individual ports or ranges separated by commas
-  pattern = r'^(?:(?:[0-9]{1,5}|[0-9]{1,5}-[0-9]{1,5})(?:,[0-9]{1,5}|,[0-9]{1,5}-[0-9]{1,5})*)*$'
+  # Regular expression to allow open-start, open-end ranges and individual ports separated by commas
+  pattern = r'^([0-9]{1,5}|[0-9]{0,5}-[0-9]{0,5})(,([0-9]{1,5}|[0-9]{0,5}-[0-9]{0,5}))*$'
   match = re.match(pattern, port_list)
 
   if match:
@@ -65,11 +78,7 @@ def is_valid_port_list(port_list):
     return True
   return False
 
-## General scoopers that eats args consisting of letters
-## to flag in REQUIRES_ARG_FLAGS
-## Further code logic improvement needed to nullify hiccups
-## Thankfully nmap has built-in error message/handling and some defaults
-## On BSD, testing 'nmap 127.0.0.1 -p peter' gives segmentation fault however
+## General scooper that nullify args consisting of letters
 def is_valid_arg_general(in_arg):
   return in_arg.isdigit() or is_valid_port_range(in_arg) or is_valid_port_list(in_arg)
 
@@ -199,7 +208,6 @@ def custom_scan():
       except ValueError:
         print("Wrong input. Please make a choice 0-11")
 
-
     ## Mimics set functionality
     ## Refinement further on could be to use set instead
     if picked_scan_type == 1:
@@ -257,7 +265,6 @@ def custom_scan():
           break
         else:
           print("Invalid input. Please try again.")
-
 
       return scan_flags, save_results
 
@@ -343,7 +350,8 @@ def process_custom_flags(scan_flags):
     flags = custom_flags.split()  # Split input args to get the flags + flagargs
 
     # Initialize skippers for args
-    # First had skip_twice since thought two arguments could be used at times
+    # First had skip_twice since thought there could be
+    # cases where two flag arguments had to be handled
     # Keep it as comment since nice alternative if ever needed
     # "twice" is only name conventionalized, both skips need to be set for twice skip
 
@@ -360,12 +368,6 @@ def process_custom_flags(scan_flags):
 
       # Check if a flag or an argument
       if flag[0].isalpha() or flag.startswith('-'):
-
-        # Special cases: allow -p- & -P and similar flags
-        # Globbing hard here without proper VALID checks, will refine if has_time
-        # Edit: Less globbing now, logic could perhaps be updated
-        # to minimize code duplication of VALID_NMAP_FLAGS checks
-
         # Normalize the flags
         if not flag.startswith('-'):
           dash_flag1_begin = f'-{flag[0]}'
@@ -388,9 +390,7 @@ def process_custom_flags(scan_flags):
           print(f'"{flag}" normalized to "{double_dash_flag}".')
           flag = double_dash_flag
 
-        # Now we have to address flags with the likes of p80,443 and PS80,443 since it's
-        # not normalized and not handled in specialcases
-        # script has to be handled also since it can be used as --script=
+        # Handle --script flag to ensure correct form even if user input --script default
         # Mini-globber
         if flag.startswith('--script') and not flag[-1] == '=':
           print(f'"{flag}" normalized to "{flag}="')
@@ -403,82 +403,47 @@ def process_custom_flags(scan_flags):
               skip_next = True  # Skip flagcheck on the argument
               continue
 
-        ## Checking single 'p' shall be safe since we already checked the other valid flags
-        ## starting with 'p'
-        ## This part is a last check to normalize and handle the pP flags
-
         # Handle flags starting with '-p'
-        # Hail mary code dup from '-P'
         if flag.startswith('-p'):
-          if len(flag) > 2:
-            # Handle possible arguments for '-p' flags
-            possible_arg = flag[2:]
-            if not possible_arg:
-              scan_flags.append(flag)
-              continue
-            if not possible_arg.startswith('-'):
-              if is_valid_arg_general(possible_arg):
-                print(f'"{possible_arg}" taken as argument for "{flag}"')
-                scan_flags.append(flag)
-                continue
-              print(f'"{possible_arg} is not a possible argument for "{flag[0:2]}". Skipping')
-              continue
-
-            possible_arg = flag[3:]
-            if not possible_arg:
-              scan_flags.append(flag)
-              continue
-            if is_valid_arg_general(possible_arg):
-              print(f'"{possible_arg}" taken as argument for "{flag}"')
-              scan_flags.append(flag)
-              continue
-            print(f'"{possible_arg} is not a possible argument for "{flag[0:2]}". Skipping')
+          possible_arg = flag[2:]
+          if not possible_arg:
+            scan_flags.append(flag)
             continue
-        # Handle flags starting with '-P'
+          if is_valid_arg_general(possible_arg):
+            print(f'"{possible_arg}" taken as argument for "{flag[0:2]}"')
+            scan_flags.append(flag)
+            continue
+          print(f'"{possible_arg} is not a possible argument for "{flag[0:2]}". Skipping')
+          continue
+
+        # Handle flags starting with '-P'. Let user have space between flag and flag arg
         if flag.startswith('-P'):
           if len(flag) == 3 and i + 1 < len(flags):
             if flag[0:3] in VALID_NMAP_FLAGS:
               possible_arg = flags[i + 1]
-              if possible_arg not in VALID_NMAP_FLAGS and is_valid_arg_general(possible_arg):
+              if is_valid_arg_general(possible_arg):
                 scan_flags.append(f'{flag}{possible_arg}')  # Extend the valid into the list
-                print(f'{possible_arg} taken as argument for {flag[0:2]}"')
+                print(f'{possible_arg} taken as argument for {flag}"')
                 skip_next = True  # Skip flagcheck on the argument
                 continue
             else:
               print(f'"{flag} is Invalid -P* flag, skipping"')
               continue
 
-          # Handle possible arguments for '-P' flags
+          # Handle possible arguments for '-P' flags. Ok use of code dup
           possible_arg = flag[3:]
           if not possible_arg:
             scan_flags.append(flag)
             continue
-          if not possible_arg.startswith('-'):
-            if is_valid_arg_general(possible_arg):
-              print(f'"{possible_arg}" taken as argument for "{flag}"')
-              scan_flags.append(flag)
-              continue
-            print(f'"{possible_arg} is not a possible argument for "{flag[0:3]}". Skipping')
-            continue
-
-          possible_arg = flag[4:]
-          if not possible_arg:
-            scan_flags.append(flag)
-            continue
           if is_valid_arg_general(possible_arg):
-            print(f'"{possible_arg}" taken as argument for "{flag}"')
+            print(f'"{possible_arg}" taken as argument for "{flag[0:3]}"')
             scan_flags.append(flag)
             continue
           print(f'"{possible_arg} is not a possible argument for "{flag[0:3]}". Skipping')
           continue
 
-        # Could bake this VALID_NMAP_FLAGS check into the ones
-        # above, but I separate them for readability and cleaner code
-        # Won't affect performance too much due to small amount of
-        # VALID_NMAPS_FLAGS elements
-
         # Check if flag is valid and requires arguments
-        # Thing to improve: Have a REQUIRES_PORTNUM_RANGE_ARG_FLAGS
+        # Thing to improve - check how many flag dependent wrong checks is_valid_arg_general() would generate
         if flag in VALID_NMAP_FLAGS:
           if flag in REQUIRES_ARG_FLAGS:
 
@@ -490,11 +455,11 @@ def process_custom_flags(scan_flags):
                 skip_next = True  # Skip flagcheck on the argument
 
               else:
-                print(f'flag "{flag}" requires an argument, but none provided.')
+                print(f'flag "{flag}" requires an argument, but none provided. Skipping')
                 continue
 
             else:
-              print(f'flag "{flag}" requires an argument, but none provided.')
+              print(f'flag "{flag}" requires an argument, but none provided. Skipping')
               continue
 
           else:
@@ -515,10 +480,8 @@ def process_custom_flags(scan_flags):
 
 def main():
   while True:
-    print("Hello and Welcome to Nmapper, a tool-assisted nmap with multithread support")
-    ## Nmapper already in python-packages, perhaps other name
+    print("Hello and Welcome to Oat's Nmapper, a tool-assisted nmap with multithread support")
     print("Some nmap options will not be configured, please run nmap for the full experience")
-    ## Can give fuller tool-assisted experience by adding all nmap flags to ..._FLAGS-sets
     print("""How many threads do you want to use?
   1. Single Nmapper session
   2. Double Threads
