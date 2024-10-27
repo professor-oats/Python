@@ -13,12 +13,17 @@ Scripts related to generic networking. Testing some websocketing and more.
 Oat's Nmapper - A kind of wrapper for nmap.
 Run script with same privileges as you would run nmap
 
-Tested on systems:
+# Tested on systems:
 * FreeBSD
 
-To improve in skills:
-* Better up system analysis and design to present logic before translating
-  to code.
+# USAGE
+Run the script with the permissions you'd want to run nmap, e.g.:
+`sudo python nmapper.py`
+Assign the amount of threads/maxworkers you'd like to run with
+and chose to add targets manually or from file (support for comma/whitespace separated lists and JSON format).
 
-To improve in coding tools:
-* Start with some kind of tests to not have to retype every run
+Add the preset flags to the run and/or add your own flags.
+Support for adding known nmap flags without hyphens as they will be normalized.
+To see the full list of possible flags to use simply display all options.
+
+When flags set press done to do the magic.
