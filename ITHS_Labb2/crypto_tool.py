@@ -1,6 +1,7 @@
 import hashlib
 import sys
 import argparse
+import decryption_counter
 from cryptography.fernet import Fernet
 from base64 import urlsafe_b64encode
 from keygen import generate_keyfile
@@ -25,24 +26,27 @@ def load_salt_and_key(key_file_name='my_sym.key'):
     return None, None, None
 
 
-def encrypt_file(file_name, key):
+def encrypt_file(file_name, key, max_decryptions=1):
   fernet = Fernet(key)  # Initialize Fernet with the loaded key
 
+  # Read and hash the original file data
   try:
     with open(file_name, 'rb') as file:
       original_data = file.read()
+      file_hash = hashlib.sha256(original_data).digest()
   except Exception as e:
     print(f"An error occurred while reading the file: {e}")
     return
 
   encrypted_data = fernet.encrypt(original_data)
 
+  # Append the hash to the encrypted data
+  encrypted_data_with_file_hash = encrypted_data + b'::' + file_hash  # Adding separator (::) for easier parsing
+
+  # Save the encrypted data with the hash
   try:
     with open(file_name + '.encrypted', 'wb') as encrypted_file:
-      encrypted_file.write(encrypted_data)
-  except FileNotFoundError:
-    print(f"Error: The file '{file_name}' was not found.")
-    return
+      encrypted_file.write(encrypted_data_with_file_hash)
   except Exception as e:
     print(f"An error occurred while writing the file: {e}")
     print("Aborting...")
@@ -50,14 +54,24 @@ def encrypt_file(file_name, key):
 
   print(f"File '{file_name}' encrypted as '{file_name}.encrypted'")
 
+  # Initialize the decryption counter for this file
+  decryption_counter.initialize_counter(file_name + '.encrypted', max_decryptions)
+  print(f"File '{file_name}' encrypted as '{file_name}.encrypted' with a max decryption count of {max_decryptions}")
+
 
 def decrypt_file(encrypted_file_name, key):
+  # Decrypt the file only if it passes the counter check.
+  # Check if decryption is allowed by the counter
+  if not decryption_counter.decrement_counter(encrypted_file_name):
+    print(
+      f"Decryption of '{encrypted_file_name}' is not allowed. The file has already been decrypted the maximum number of times.")
+    return
   fernet = Fernet(key)  # Create a Fernet instance with the derived key
 
   # Read the encrypted file
   try:
     with open(encrypted_file_name, 'rb') as encrypted_file:
-      encrypted_data = encrypted_file.read()
+      encrypted_data_with_file_hash = encrypted_file.read()
   except FileNotFoundError:
     print(f'"{encrypted_file_name}" not found. Please ensure that the path is correct.')
     return
@@ -66,9 +80,26 @@ def decrypt_file(encrypted_file_name, key):
     print("Aborting...")
     return
 
+  # Separate encrypted data and hash
+  try:
+    encrypted_data, stored_file_hash = encrypted_data_with_file_hash.split(b'::')
+  except ValueError:
+    print("Encrypted file format is invalid or corrupted.")
+    return
+
   try:
     # Decrypt the data
     decrypted_data = fernet.decrypt(encrypted_data)
+
+    # Calculate hash of decrypted data
+    new_hash = hashlib.sha256(decrypted_data).digest()
+
+    # Verify integrity
+    if new_hash != stored_file_hash:
+      print("Integrity check failed! The file has been tampered with or corrupted.")
+      return
+    else:
+      print("Integrity check passed.")
 
     # Save the decrypted data to a file (without the '.encrypted' extension)
     decrypted_file_name = encrypted_file_name.replace('.encrypted', '')
@@ -120,6 +151,12 @@ def main():
     const='my_sym.key',  # Default value if no file is provided
     help='Generate a new key for encryption/decryption (optionally provide a file name)'
   )
+  parser.add_argument(
+    '--max-decryptions',
+    type=int,
+    nargs='?',
+    help='Set a maximum number of decryption attempts for the encrypted file'
+  )
 
   dORe = parser.add_mutually_exclusive_group(required=False)
   dORe.add_argument(
@@ -163,7 +200,7 @@ def main():
   if args.keyfile:
     key_file_name = args.keyfile
   elif key_file_name is None:
-    key_file_name = 'my_sym.key'  # Default to 'my_sym.key' if no key file specified
+    key_file_name = '../my_sym.key'  # Default to 'my_sym.key' if no key file specified
   print(f'Using keyfile "{key_file_name}"')
 
   # Attempt to load the salt and key
@@ -181,10 +218,16 @@ def main():
     print("Aborting...")
     return
 
+  # Check if --max-decryptions is used without --encrypt
+  if args.max_decryptions is not None and args.encrypt is None:
+    parser.error(
+      "--max-decryptions can only be used with --encrypt. Please use --encrypt to specify the file to encrypt."
+    )
+
   # Encrypt or decrypt as needed
   if args.encrypt:
     print(f'Encrypting the file "{args.encrypt}"')
-    encrypt_file(args.encrypt, key)
+    encrypt_file(args.encrypt, key, args.max_decryptions)
 
   if args.decrypt:
     if not validate_file_extension(args.decrypt, '.encrypted'):
