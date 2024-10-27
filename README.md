@@ -45,10 +45,10 @@ To encrypt file you point the script to the keyfilepath with `-k` flag,
 and `-e` for encrypt, `-d` for decrypt: <br/>
 `python crypto_tool.py -k [mykey] -e [filetoencrypt]` <br/>
 
-To decrypt a file make sure that the extension `.encrypted` is used:
+To decrypt a file make sure that the extension `.encrypted` is used: <br/>
 `python crypto_tool.py -k [mykey] -d [filetodecrypt].encrypted` <br/>
 
-You can also generate a new key that is to be used for encryption/decryption by adding `-g` flag:
+You can also generate a new key that is to be used for encryption/decryption by adding `-g` flag: <br/>
 `python crypto_tool.py -g keyname` <br/>
 can be used to encrypt on the fly:
 `python crypto_tool.py -g keyname -e [filetoencrypt]`
