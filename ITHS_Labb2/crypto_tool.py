@@ -16,6 +16,7 @@ def load_salt_and_key(key_file_name='my_sym.key'):
       key, password_hash = key_and_hash.split(b':')
       key = key.decode()  # Fernet requires a base64-encoded string
       return salt, key, password_hash
+
   except FileNotFoundError:
     print(f"Error: The file '{key_file_name}' was not found.")
     return None, None, None
@@ -39,8 +40,13 @@ def encrypt_file(file_name, key):
   try:
     with open(file_name + '.encrypted', 'wb') as encrypted_file:
       encrypted_file.write(encrypted_data)
+  except FileNotFoundError:
+    print(f"Error: The file '{file_name}' was not found.")
+    return
   except Exception as e:
     print(f"An error occurred while writing the file: {e}")
+    print("Aborting...")
+    return
 
   print(f"File '{file_name}' encrypted as '{file_name}.encrypted'")
 
@@ -58,7 +64,7 @@ def decrypt_file(encrypted_file_name, key):
   except Exception as e:
     print(f"An error occurred while reading the file: {e}")
     print("Aborting...")
-    exit()
+    return
 
   try:
     # Decrypt the data
@@ -116,13 +122,13 @@ def main():
     help='Generate a new key for encryption/decryption (optionally provide a file name)'
   )
 
-  parser.add_argument(
+  dORe = parser.add_mutually_exclusive_group(required=True)
+  dORe.add_argument(
     '-e', '--encrypt',
     type=str,
     help='Path to the file to encrypt'
   )
-
-  parser.add_argument(
+  dORe.add_argument(
     '-d', '--decrypt',
     type=str,
     help='Path to the file to decrypt'
@@ -134,6 +140,9 @@ def main():
   if len(sys.argv) == 1:
     parser.print_help()  # Show help if no arguments are passed
     sys.exit(1)  # Exit the script
+
+  if args.generate and args.decrypt:
+    parser.error("The --generate option cannot be used with --decrypt. Exiting...")
 
   key_file_name = None  # Initialize key_file_name as None
 
@@ -156,6 +165,7 @@ def main():
     key_file_name = args.keyfile
   elif key_file_name is None:
     key_file_name = 'my_sym.key'  # Default to 'my_sym.key' if no key file specified
+  print(f'Using keyfile "{key_file_name}"')
 
   # Attempt to load the salt and key
   try:
