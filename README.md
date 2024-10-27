@@ -35,14 +35,14 @@ Key with password generator + tool for encryption and decryption
 * Windows 10
 
 ### Usage
-Create a key you want to use for encryption/decryption and optionally set a password.
-Password is necessary to decrypt files.
+Create a key you want to use for encryption/decryption and optionally set a password. <br/>
+Password is necessary to decrypt files. <br/>
 `python keygen.py` <br/>
 
 A prompt will be given to set password for use.
 
 To encrypt file you point the script to the keyfilepath with `-k` flag,
-and `-e` for encrypt, `-d` for decrypt:
+and `-e` for encrypt, `-d` for decrypt: <br/>
 `python crypto_tool.py -k [mykey] -e [filetoencrypt]` <br/>
 
 To decrypt a file make sure that the extension `.encrypted` is used:
