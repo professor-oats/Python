@@ -50,5 +50,6 @@ To decrypt a file make sure that the extension `.encrypted` is used: <br/>
 
 You can also generate a new key that is to be used for encryption/decryption by adding `-g` flag: <br/>
 `python crypto_tool.py -g keyname` <br/>
+
 can be used to encrypt on the fly: <br/>
 `python crypto_tool.py -g keyname -e [filetoencrypt]`
