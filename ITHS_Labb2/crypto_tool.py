@@ -155,6 +155,7 @@ def main():
     '--max-decryptions',
     type=int,
     nargs='?',
+    default=1,
     help='Set a maximum number of decryption attempts for the encrypted file'
   )
 
