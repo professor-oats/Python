@@ -122,7 +122,7 @@ def main():
     help='Generate a new key for encryption/decryption (optionally provide a file name)'
   )
 
-  dORe = parser.add_mutually_exclusive_group(required=True)
+  dORe = parser.add_mutually_exclusive_group(required=False)
   dORe.add_argument(
     '-e', '--encrypt',
     type=str,
