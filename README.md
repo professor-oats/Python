@@ -16,7 +16,7 @@ Run script with same privileges as you would run nmap
 ### Tested on systems:
 * FreeBSD
 
-### USAGE
+### Usage
 Run the script with the permissions you'd want to run nmap, e.g.:
 `sudo python nmapper.py`
 Assign the amount of threads/maxworkers you'd like to run with
