@@ -18,6 +18,7 @@ Oat's Nmapper - A kind of wrapper for nmap.
 ### Usage
 Run the script with the permissions you'd want to run nmap, e.g.:<br/>
 `sudo python nmapper.py`<br/>
+
 Assign the amount of threads/maxworkers you'd like to run with
 and chose to add targets manually or from file (support for comma/whitespace separated lists and JSON format).
 
