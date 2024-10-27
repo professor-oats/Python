@@ -113,7 +113,6 @@ def main():
     type=str,
     help='Path to the key file (default: my_sym.key)'
   )
-
   parser.add_argument(
     '-g', '--generate',
     type=str,
@@ -137,9 +136,9 @@ def main():
   # Parse arguments
   args = parser.parse_args()
 
-  if len(sys.argv) == 1:
-    parser.print_help()  # Show help if no arguments are passed
-    sys.exit(1)  # Exit the script
+  if not (args.encrypt or args.decrypt or args.generate):
+    parser.print_help()
+    sys.exit(1)
 
   if args.generate and args.decrypt:
     parser.error("The --generate option cannot be used with --decrypt. Exiting...")
