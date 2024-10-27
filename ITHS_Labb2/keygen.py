@@ -43,5 +43,13 @@ def generate_keyfile(key_file_name='my_sym.key'):
     key_file.write(salt + key + b':' + password_hash)
   print(f'Key, salt and password saved to "{key_file_name}"')
 
+#Generate a new Fernet key and save it to a file
+def generate_json_decrypt_key():
+    f_key = Fernet.generate_key()
+    with open("json_decrypt_counter.key", "wb") as key_file:
+        key_file.write(f_key)
+    print('Key has been generated and saved to "json_decrypt_counter.key"')
+
 if __name__ == "__main__":
   generate_keyfile()
+  generate_json_decrypt_key()

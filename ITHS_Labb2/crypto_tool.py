@@ -4,7 +4,7 @@ import argparse
 import decryption_counter
 from cryptography.fernet import Fernet
 from base64 import urlsafe_b64encode
-from keygen import generate_keyfile
+from keygen import generate_keyfile, generate_json_decrypt_key
 
 
 def load_salt_and_key(key_file_name='my_sym.key'):
@@ -19,7 +19,7 @@ def load_salt_and_key(key_file_name='my_sym.key'):
       return salt, key, password_hash
 
   except FileNotFoundError:
-    print(f"Error: The file '{key_file_name}' was not found.")
+    print(f'Error: The file "{key_file_name}" was not found.')
     return None, None, None
   except Exception as e:
     print(f"An error occurred while reading the file: {e}")
@@ -60,7 +60,7 @@ def encrypt_file(file_name, key, max_decryptions=1):
 
 
 def decrypt_file(encrypted_file_name, key):
-  # Decrypt the file only if it passes the counter check.
+  # Decrypt the file only if it passes the counter check
   # Check if decryption is allowed by the counter
   if not decryption_counter.decrement_counter(encrypted_file_name):
     print(
@@ -120,7 +120,7 @@ def validate_file_extension(file_path, required_extension):
 
 
 def check_password(userpass, stored_hash):
-  """Check if the provided password matches the stored password hash."""
+  # Check if the provided password matches the stored password hash
   # Hash the user-provided password
   hashed_password = hashlib.sha256(userpass.encode()).digest()
 
@@ -197,11 +197,22 @@ def main():
       print("Couldn't find the keygen.py script. Please make sure it's in the same directory or provide the correct path.")
       return
 
+    try:
+      generate_json_decrypt_key()
+      print(f'New key file successfully generated as "json_decrypt_counter.key"')
+    except Exception as e:
+      print(f"An error occurred during key generation: {e}")
+      return
+    except FileNotFoundError:
+      print(
+        "Couldn't find the keygen.py script. Please make sure it's in the same directory or provide the correct path.")
+      return
+
   # Use the specified key file or fall back to the generated one
   if args.keyfile:
     key_file_name = args.keyfile
   elif key_file_name is None:
-    key_file_name = '../my_sym.key'  # Default to 'my_sym.key' if no key file specified
+    key_file_name = './my_sym.key'  # Default to 'my_sym.key' if no key file specified
   print(f'Using keyfile "{key_file_name}"')
 
   # Attempt to load the salt and key
@@ -220,7 +231,8 @@ def main():
     return
 
   # Check if --max-decryptions is used without --encrypt
-  if args.max_decryptions is not None and args.encrypt is None:
+  if args.max_decryptions != 1 and args.encrypt is None:
+    print(args.max_decryptions)
     parser.error(
       "--max-decryptions can only be used with --encrypt. Please use --encrypt to specify the file to encrypt."
     )
