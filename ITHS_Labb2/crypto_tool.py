@@ -155,7 +155,6 @@ def main():
     '--max-decryptions',
     type=int,
     nargs='?',
-    default=1,
     help='Set a maximum number of decryption attempts for the encrypted file'
   )
 
@@ -231,8 +230,7 @@ def main():
     return
 
   # Check if --max-decryptions is used without --encrypt
-  if args.max_decryptions != 1 and args.encrypt is None:
-    print(args.max_decryptions)
+  if args.max_decryptions is not None and args.encrypt is None:
     parser.error(
       "--max-decryptions can only be used with --encrypt. Please use --encrypt to specify the file to encrypt."
     )
@@ -240,7 +238,10 @@ def main():
   # Encrypt or decrypt as needed
   if args.encrypt:
     print(f'Encrypting the file "{args.encrypt}"')
-    encrypt_file(args.encrypt, key, args.max_decryptions)
+    if args.max_decryptions is None:
+      encrypt_file(args.encrypt, key, 1)
+    else:
+      encrypt_file(args.encrypt, key, args.max_decryptions)
 
   if args.decrypt:
     if not validate_file_extension(args.decrypt, '.encrypted'):
