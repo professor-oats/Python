@@ -22,6 +22,14 @@ def gen_key_from_password(password: str, salt: bytes) -> bytes:
   )
   return urlsafe_b64encode(kdf.derive(password.encode()))  # 64base encode for safer representation
 
+
+def generate_json_decrypt_counter_key():
+  with open('json_decrypt_counter.key', 'wb') as jsondecryptkey:
+    jsondecryptkey.write(Fernet.generate_key())
+    print(f'File "json_decrypt_counter.key" generated')
+  return
+
+
 def generate_keyfile(key_file_name='my_sym.key'):
   passcheck = ""
   while True:
@@ -42,6 +50,8 @@ def generate_keyfile(key_file_name='my_sym.key'):
   with open(key_file_name, 'wb') as key_file:
     key_file.write(salt + key + b':' + password_hash)
   print(f'Key, salt and password saved to "{key_file_name}"')
+  return
 
 if __name__ == "__main__":
   generate_keyfile()
+  generate_json_decrypt_counter_key()

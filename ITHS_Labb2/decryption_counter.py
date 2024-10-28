@@ -1,21 +1,48 @@
 import json
 import os
+from cryptography.fernet import Fernet
 
 # Define the path for the counter file
 COUNTER_FILE_PATH = 'decryption_counters.json'
+KEY_FILE_PATH = 'json_decrypt_counter.key'
+
+def load_key():
+  try:
+    with open(KEY_FILE_PATH, 'rb') as key_file:
+      data = key_file.read()
+      return data
+  except FileNotFoundError:
+    print(f'Error: The file "json_decrypt_counter.key" was not found.')
+    return None
+  except Exception as e:
+    print(f'An error occurred while reading the file: {e}')
+    return None
+
+## Load the key into a fernet instance
+d_key = load_key()
+if d_key is None:
+    print("Failed to load the encryption key. Exiting...")
+    exit(1)
+
+fernet_json = Fernet(d_key)
 
 def load_counters():
-  # Load the counters from the JSON file.
+  # Load the counters from the JSON file
   if os.path.exists(COUNTER_FILE_PATH):
-    with open(COUNTER_FILE_PATH, 'r') as file:
-      return json.load(file)
+    with open(COUNTER_FILE_PATH, 'rb') as file:  # Open in binary mode for encrypted data
+      encrypted_data = file.read()
+      decrypted_data = fernet_json.decrypt(encrypted_data)  # Decrypt the data
+      json_data = decrypted_data.decode('utf-8')
+      return json.loads(json_data)  # Load as JSON
   else:
     return {}
 
 def save_counters(counters):
-  # Save the counters to the JSON file.
-  with open(COUNTER_FILE_PATH, 'w') as file:
-    json.dump(counters, file)
+  # Save the counters to the JSON file
+  json_data = json.dumps(counters).encode()  # Convert to bytes
+  encrypted_data = fernet_json.encrypt(json_data)  # Encrypt the data
+  with open(COUNTER_FILE_PATH, 'wb') as file:  # Open in binary mode for encrypted data
+    file.write(encrypted_data)  # Save the encrypted data
 
 def initialize_counter(file_name, max_decryptions=1):
   # Initialize a counter for a given file with a max decryption limit.

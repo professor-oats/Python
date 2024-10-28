@@ -4,7 +4,7 @@ import argparse
 import decryption_counter
 from cryptography.fernet import Fernet
 from base64 import urlsafe_b64encode
-from keygen import generate_keyfile
+from keygen import generate_keyfile, generate_json_decrypt_counter_key
 
 
 def load_salt_and_key(key_file_name='my_sym.key'):
@@ -28,6 +28,7 @@ def load_salt_and_key(key_file_name='my_sym.key'):
 
 def encrypt_file(file_name, key, max_decryptions=1):
   fernet = Fernet(key)  # Initialize Fernet with the loaded key
+  encrypted_file_name = file_name + '.encrypted'
 
   # Read and hash the original file data
   try:
@@ -45,18 +46,18 @@ def encrypt_file(file_name, key, max_decryptions=1):
 
   # Save the encrypted data with the hash
   try:
-    with open(file_name + '.encrypted', 'wb') as encrypted_file:
+    with open(encrypted_file_name, 'wb') as encrypted_file:
       encrypted_file.write(encrypted_data_with_file_hash)
   except Exception as e:
     print(f"An error occurred while writing the file: {e}")
     print("Aborting...")
     return
 
-  print(f"File '{file_name}' encrypted as '{file_name}.encrypted'")
+  print(f"File '{file_name}' encrypted as '{encrypted_file_name}'")
 
   # Initialize the decryption counter for this file
-  decryption_counter.initialize_counter(file_name + '.encrypted', max_decryptions)
-  print(f"File '{file_name}' encrypted as '{file_name}.encrypted' with a max decryption count of {max_decryptions}")
+  decryption_counter.initialize_counter(encrypted_file_name, max_decryptions)
+  print(f"File '{file_name}' encrypted as '{encrypted_file_name} with a max decryption count of {max_decryptions}")
 
 
 def decrypt_file(encrypted_file_name, key):
@@ -110,6 +111,7 @@ def decrypt_file(encrypted_file_name, key):
   except Exception as e:
     print("Decryption failed. Incorrect password or corrupted file.")
     print(str(e))
+  return
 
 
 def validate_file_extension(file_path, required_extension):
@@ -188,6 +190,7 @@ def main():
     print('Generating key file...')
     try:
       generate_keyfile(key_file_name)  # Ensure the keygen function uses the new filename
+      generate_json_decrypt_counter_key()
       print(f'New key file successfully generated as {key_file_name}')
     except Exception as e:
       print(f"An error occurred during key generation: {e}")
