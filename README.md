@@ -30,6 +30,7 @@ When flags set press done to do the magic.
 
 ## ITHS_Labb2
 Key with password generator + tool for encryption and decryption. <br/>
+
 Added functionalities so that a decryption counter is stored as an json object
 linked to the filename that limits the numbers of decryptions to be made of an 
 encrypted file.
