@@ -1,11 +1,23 @@
 import hashlib
 import sys
 import argparse
-import decryption_counter
 from cryptography.fernet import Fernet
 from base64 import urlsafe_b64encode
 from keygen import generate_keyfile, generate_json_decrypt_counter_key
 
+## Time for some lazy imports
+dependency_decryption_counter = None
+
+def load_dependent_decryption_counter():
+  global dependency_decryption_counter
+  if dependency_decryption_counter is None:
+    try:
+      import decryption_counter as d_c  # Import and alias for convenience
+      dependency_decryption_counter = d_c
+      print("Successfully imported decryption_counter.py.")
+    except ImportError as e:
+      print(f"Failed to import decryption_counter.py: {e}")
+      raise
 
 def load_salt_and_key(key_file_name='my_sym.key'):
   try:
@@ -55,15 +67,22 @@ def encrypt_file(file_name, key, max_decryptions=1):
 
   print(f"File '{file_name}' encrypted as '{encrypted_file_name}'")
 
-  # Initialize the decryption counter for this file
-  decryption_counter.initialize_counter(encrypted_file_name, max_decryptions)
-  print(f"File '{file_name}' encrypted as '{encrypted_file_name} with a max decryption count of {max_decryptions}")
+  load_dependent_decryption_counter()
+
+  if dependency_decryption_counter is not None:
+    # Initialize the decryption counter for this file
+    dependency_decryption_counter.initialize_counter(encrypted_file_name, max_decryptions)
+    print(f"File '{file_name}' encrypted as '{encrypted_file_name}' with a max decryption count of {max_decryptions}")
+  else:
+    print("Error: Dependency 'decryption_counter' was not loaded. Cannot initialize counter.")
 
 
 def decrypt_file(encrypted_file_name, key):
   # Decrypt the file only if it passes the counter check.
   # Check if decryption is allowed by the counter
-  if not decryption_counter.decrement_counter(encrypted_file_name):
+  load_dependent_decryption_counter()
+
+  if not dependency_decryption_counter.decrement_counter(encrypted_file_name):
     print(
       f"Decryption of '{encrypted_file_name}' is not allowed. The file has already been decrypted the maximum number of times.")
     return
@@ -183,6 +202,8 @@ def main():
     parser.error("The --generate option cannot be used with --decrypt. Exiting...")
 
   key_file_name = None  # Initialize key_file_name as None
+  print("Here")
+  print(args.generate)
 
   # Check if a new key file should be generated
   if args.generate:
