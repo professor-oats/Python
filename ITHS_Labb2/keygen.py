@@ -1,10 +1,13 @@
+import os
+import hashlib
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.backends import default_backend
 from base64 import urlsafe_b64encode
 from cryptography.hazmat.primitives import hashes
-import os
-import hashlib
+
+# Define the path for the json key file
+JSON_KEY_FILE_PATH = 'json_decrypt_counter.key'
 
 
 def gen_key_from_password(password: str, salt: bytes) -> bytes:
@@ -24,9 +27,9 @@ def gen_key_from_password(password: str, salt: bytes) -> bytes:
 
 
 def generate_json_decrypt_counter_key():
-  with open('json_decrypt_counter.key', 'wb') as jsondecryptkey:
+  with open(JSON_KEY_FILE_PATH, 'wb') as jsondecryptkey:
     jsondecryptkey.write(Fernet.generate_key())
-    print(f'File "json_decrypt_counter.key" generated')
+    print(f'File "{JSON_KEY_FILE_PATH}" generated')
   return
 
 

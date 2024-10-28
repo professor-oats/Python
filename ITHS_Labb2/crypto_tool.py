@@ -15,10 +15,13 @@ def load_dependent_decryption_counter():
     try:
       import decryption_counter as d_c  # Import and alias for convenience
       dependency_decryption_counter = d_c
-      print("Successfully imported decryption_counter.py.")
+      print(f'Successfully imported {dependency_decryption_counter.__name__}.')
     except ImportError as e:
-      print(f"Failed to import decryption_counter.py: {e}")
+      print(f'Failed to import {dependency_decryption_counter.__name__}: {e}')
       raise
+
+# Define the path for the counter file
+JSON_COUNTER_FILE_PATH = 'decryption_counters.json'
 
 def load_salt_and_key(key_file_name='my_sym.key'):
   try:
@@ -79,7 +82,7 @@ def encrypt_file(file_name, key, max_decryptions=1):
       print(f'Could not initialize counter: {e}')
 
   else:
-    print("Error: Dependency 'decryption_counter' was not loaded. Cannot initialize counter.")
+    print(f'Error: Dependency {dependency_decryption_counter.__name__} was not loaded. Cannot initialize counter.')
 
 
 def decrypt_file(encrypted_file_name, key):
@@ -216,8 +219,10 @@ def main():
       generate_keyfile(key_file_name)  # Ensure the keygen function uses the new filename
       generate_json_decrypt_counter_key()
       print(f'New key file successfully generated as {key_file_name}')
-      if os.path.exists("decryption_counters.json"):
-        os.remove("decryption_counters.json")
+      ## Old json counter file has to be deleted so there won't be any
+      ## mismatch in keys when decrypting the encrypted stored data on load
+      if os.path.exists(JSON_COUNTER_FILE_PATH):
+        os.remove(JSON_COUNTER_FILE_PATH)
         print("Old decryption counters file removed!")
     except Exception as e:
       print(f"An error occurred during key generation: {e}")
@@ -240,23 +245,21 @@ def main():
       "--max-decryptions can only be used with --encrypt. Please use --encrypt to specify the file to encrypt."
     )
 
+  ## This is a special case for when generate and encrypt args are used in conjunction
+  ## It brought some tinker time to come up with this strict logic in crypto_tool
+  ## to ensure that the correct keys are created and used for encryption on the fly
+
   if args.generate and args.encrypt:
     key_file_name = args.generate if args.generate.endswith('.key') else args.generate + '.key'
     print('Generating key file...')
     try:
       generate_keyfile(key_file_name)  # Ensure the keygen function uses the new filename
-      if os.path.exists("json_decrypt_counter.key"):
-        try:
-          os.remove("json_decrypt_counter.key")  # Delete the file
-          print(f'File "json_decrypt_counter.key" has been deleted.')
-        except Exception as e:
-          print(f"An error occurred while trying to delete the file: {e}")
-      else:
-        print(f'File "json_decrypt_counter.key" does not exist.')
       generate_json_decrypt_counter_key()
       print(f'New key file successfully generated as {key_file_name}')
-      if os.path.exists("decryption_counters.json"):
-        os.remove("decryption_counters.json")
+      ## Old json counter file has to be deleted so there won't be any
+      ## mismatch in keys when decrypting the encrypted stored data on load
+      if os.path.exists(JSON_COUNTER_FILE_PATH):
+        os.remove(JSON_COUNTER_FILE_PATH)
         print("Old decryption counters file removed!")
     except Exception as e:
       print(f"An error occurred during key generation: {e}")
@@ -274,6 +277,7 @@ def main():
         return
       else:
         print("Salt and key loaded successfully")
+        ## No return here so the if args statement continue on successful load
     except ValueError as e:
       print(f"{e}: Failed to load the salt and key. Make sure you specified a keyfile to use")
       print("Aborting...")
@@ -295,7 +299,8 @@ def main():
         print(f'An error occurred during encryption: {e}')
         return
 
-  # Attempt to load the salt and key
+  ## Here the args that has to be handled before have been managed
+  ## Attempt to load the salt and key to use hereby forth
   try:
     salt, key, password_hash = load_salt_and_key(key_file_name)
     if salt is None or key is None:
