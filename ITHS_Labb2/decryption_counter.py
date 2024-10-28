@@ -20,6 +20,7 @@ def load_key():
 
 ## Load the key into a fernet instance
 d_key = load_key()
+print(d_key)
 if d_key is None:
     print("Failed to load the encryption key. Exiting...")
     exit(1)
@@ -29,11 +30,17 @@ fernet_json = Fernet(d_key)
 def load_counters():
   # Load the counters from the JSON file
   if os.path.exists(COUNTER_FILE_PATH):
-    with open(COUNTER_FILE_PATH, 'rb') as file:  # Open in binary mode for encrypted data
-      encrypted_data = file.read()
-      decrypted_data = fernet_json.decrypt(encrypted_data)  # Decrypt the data
-      json_data = decrypted_data.decode('utf-8')
-      return json.loads(json_data)  # Load as JSON
+    print("Monsters Inc")
+    try:
+      with open(COUNTER_FILE_PATH, 'rb') as file:  # Open in binary mode for encrypted data
+        encrypted_data = file.read()
+        decrypted_data = fernet_json.decrypt(encrypted_data)  # Decrypt the data
+        json_data = decrypted_data.decode('utf-8')
+        return json.loads(json_data)  # Load as JSON
+    except FileNotFoundError:
+      print("File not found")
+    except Exception as e:
+      print(f"An error occurred while reading the file: {e}")
   else:
     return {}
 

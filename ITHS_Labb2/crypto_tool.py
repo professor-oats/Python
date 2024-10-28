@@ -1,4 +1,5 @@
 import hashlib
+import os.path
 import sys
 import argparse
 from cryptography.fernet import Fernet
@@ -71,8 +72,12 @@ def encrypt_file(file_name, key, max_decryptions=1):
 
   if dependency_decryption_counter is not None:
     # Initialize the decryption counter for this file
-    dependency_decryption_counter.initialize_counter(encrypted_file_name, max_decryptions)
-    print(f"File '{file_name}' encrypted as '{encrypted_file_name}' with a max decryption count of {max_decryptions}")
+    try:
+      dependency_decryption_counter.initialize_counter(encrypted_file_name, max_decryptions)
+      print(f"File '{file_name}' encrypted as '{encrypted_file_name}' with a max decryption count of {max_decryptions}")
+    except Exception as e:
+      print(f'Could not initialize counter: {e}')
+
   else:
     print("Error: Dependency 'decryption_counter' was not loaded. Cannot initialize counter.")
 
@@ -202,17 +207,18 @@ def main():
     parser.error("The --generate option cannot be used with --decrypt. Exiting...")
 
   key_file_name = None  # Initialize key_file_name as None
-  print("Here")
-  print(args.generate)
 
   # Check if a new key file should be generated
-  if args.generate:
+  if args.generate and not args.encrypt:
     key_file_name = args.generate if args.generate.endswith('.key') else args.generate + '.key'
     print('Generating key file...')
     try:
       generate_keyfile(key_file_name)  # Ensure the keygen function uses the new filename
       generate_json_decrypt_counter_key()
       print(f'New key file successfully generated as {key_file_name}')
+      if os.path.exists("decryption_counters.json"):
+        os.remove("decryption_counters.json")
+        print("Old decryption counters file removed!")
     except Exception as e:
       print(f"An error occurred during key generation: {e}")
       return
@@ -226,6 +232,68 @@ def main():
   elif key_file_name is None:
     key_file_name = './my_sym.key'  # Default to 'my_sym.key' if no key file specified
   print(f'Using keyfile "{key_file_name}"')
+
+
+  # Check if --max-decryptions is used without --encrypt
+  if args.max_decryptions is not None and args.encrypt is None:
+    parser.error(
+      "--max-decryptions can only be used with --encrypt. Please use --encrypt to specify the file to encrypt."
+    )
+
+  if args.generate and args.encrypt:
+    key_file_name = args.generate if args.generate.endswith('.key') else args.generate + '.key'
+    print('Generating key file...')
+    try:
+      generate_keyfile(key_file_name)  # Ensure the keygen function uses the new filename
+      if os.path.exists("json_decrypt_counter.key"):
+        try:
+          os.remove("json_decrypt_counter.key")  # Delete the file
+          print(f'File "json_decrypt_counter.key" has been deleted.')
+        except Exception as e:
+          print(f"An error occurred while trying to delete the file: {e}")
+      else:
+        print(f'File "json_decrypt_counter.key" does not exist.')
+      generate_json_decrypt_counter_key()
+      print(f'New key file successfully generated as {key_file_name}')
+      if os.path.exists("decryption_counters.json"):
+        os.remove("decryption_counters.json")
+        print("Old decryption counters file removed!")
+    except Exception as e:
+      print(f"An error occurred during key generation: {e}")
+      return
+    except FileNotFoundError:
+      print("Couldn't find the keygen.py script. Please make sure it's in the same directory or provide the correct path.")
+      return
+
+    try:
+      salt, key, password_hash = load_salt_and_key(key_file_name)
+      if salt is None or key is None:
+        print("Failed to load the salt and key")
+        print("Make sure to have your key file in the same directory or set path and rerun the script")
+        print("Aborting...")
+        return
+      else:
+        print("Salt and key loaded successfully")
+    except ValueError as e:
+      print(f"{e}: Failed to load the salt and key. Make sure you specified a keyfile to use")
+      print("Aborting...")
+      return
+
+    if args.max_decryptions is None:
+      try:
+        encrypt_file(args.encrypt, key, 1)
+        return
+      except Exception as e:
+        print(f'An error occurred during encryption: {e}')
+        return
+    else:
+      try:
+        encrypt_file(args.encrypt, key, args.max_decryptions)
+        return
+      except Exception as e:
+        print("Here")
+        print(f'An error occurred during encryption: {e}')
+        return
 
   # Attempt to load the salt and key
   try:
@@ -242,14 +310,8 @@ def main():
     print("Aborting...")
     return
 
-  # Check if --max-decryptions is used without --encrypt
-  if args.max_decryptions is not None and args.encrypt is None:
-    parser.error(
-      "--max-decryptions can only be used with --encrypt. Please use --encrypt to specify the file to encrypt."
-    )
-
   # Encrypt or decrypt as needed
-  if args.encrypt:
+  if args.encrypt and not args.generate:
     print(f'Encrypting the file "{args.encrypt}"')
     if args.max_decryptions is None:
       encrypt_file(args.encrypt, key, 1)
