@@ -30,6 +30,15 @@ When flags set press done to do the magic.
 
 ## ITHS_Labb2
 Key with password generator + tool for encryption and decryption
+Added functionalities so that a decryption counter is stored as an json object
+linked to the filename that limits the numbers of decryptions to be made of an 
+encrypted file.
+
+Thoughtfully this could be further integrated into an admin sided key management system
+that controls how many decryptions are to be allowed for a file.
+
+SHA256-Check for file tamper also if the encrypted files has been tampered with or lost/changed data
+in storage
 
 ### Tested on systems
 * Windows 10
@@ -47,6 +56,9 @@ and `-e` for encrypt, `-d` for decrypt: <br/>
 
 To decrypt a file make sure that the extension `.encrypted` is used: <br/>
 `python crypto_tool.py -k [mykey] -d [filetodecrypt].encrypted` <br/>
+
+To allow an encrypted file to be decrypted more times than one you specify it on encryption: <br/>
+`python crypto_tool.py -k [mykey] -e [filetoencrypt] --max-decryptions=[int]` <br/>
 
 You can also generate a new key that is to be used for encryption/decryption by adding `-g` flag: <br/>
 `python crypto_tool.py -g keyname` <br/>
