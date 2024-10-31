@@ -24,6 +24,7 @@ def run_fileserver(serve_path):
     print("Server stopped.")
     httpd.server_close()
     print("Server closed.")
+    return
 
 if __name__ == '__main__':
   PORT = 9999
@@ -32,9 +33,10 @@ if __name__ == '__main__':
     if not SERVE_PATH:
       SERVE_PATH = os.getcwd()
     if os.path.exists(SERVE_PATH):
-      run_fileserver(SERVE_PATH)
-      exit(0)
+      break 
     else:
       print("Path does not exist. Make sure path exists")
+
+  run_fileserver(SERVE_PATH)
 
 
