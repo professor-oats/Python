@@ -1,15 +1,16 @@
 import requests
+import os
 
-def upload_file(file_path, server_url='http://192.168.1.150:9999/upload'):
-    # Open the file in binary mode and upload it
+def upload_file(file_path, relative_path, server_url='http://192.168.10.150:9999/upload'):  # /upload is the specified api route requested at flask server
     try:
         with open(file_path, 'rb') as file:
-            # Send the file to the server
             files = {'file': file}
-            response = requests.post(server_url, files=files)
+            # Send the relative path as form data along with the file
+            data = {'relative_path': relative_path}
+            response = requests.post(server_url, files=files, data=data)
 
         # Print the server's response
-        print(f'File: {file_path}')
+        print(f'File: {relative_path}')
         print(f'Status Code: {response.status_code}')
         print(f'Response: {response.json()}')
 
@@ -18,17 +19,18 @@ def upload_file(file_path, server_url='http://192.168.1.150:9999/upload'):
     except Exception as e:
         print(f'Error while uploading {file_path}: {e}')
 
-def upload_files(file_paths, server_url='http://192.168.1.150:9999/upload'):
-    for file_path in file_paths:
-        upload_file(file_path, server_url)
+def upload_directory(directory_path, server_url='http://192.168.10.150:9999/upload'):
+    # Traverse the directory and its subdirectories
+    for root, dirs, files in os.walk(directory_path):
+        for file in files:
+            file_path = os.path.join(root, file)
+            # Calculate the relative path for each file
+            relative_path = os.path.relpath(file_path, start=directory_path)
+            upload_file(file_path, relative_path, server_url)
 
 if __name__ == '__main__':
-    # List of files to be uploaded
-    file_paths = [
-        '/path/to/file',
-        '/path/to/otherfile'
-        # Add more file paths as needed
-    ]
+    # Specify the directory you want to upload
+    directory_path = 'C:/Users/chron/Documents/Programming/Python/ITHS/Project1'
     
-    # Upload all files
-    upload_files(file_paths)
+    # Upload all files in the directory and subdirectories
+    upload_directory(directory_path)
