@@ -16,9 +16,12 @@ ttl_mapping = {}
 
 # Construction of known_devices dict for fine grain checking
 known_devices = {
-    '192.168.10.1': 'c4:ea:1d:0c:7d:92',  # Example known gateway MAC - Currently using homerouter here
+    '192.168.10.1': 'ff:ff:ff:ff:ff:ff',  # Example known gateway MAC
     # Add more known devices here
 }
+
+ARP_RESPONSE_THRESHOLD = 4  # Change to wanted threshold
+TIME_WINDOW = 10  # Change time window in seconds to check the threshold
 
 def detect_suspicious_arp(packet):
     if packet.haslayer(ARP) and packet[ARP].op == 2:  # ARP response
@@ -66,8 +69,8 @@ def detect_suspicious_arp(packet):
 
 def analyze_frequency(src_ip):  # Make sure to check the network onbeforehand to set appropriate thresholds
   # Define the time window for frequency analysis (in seconds)
-  time_window = 10
-  cutoff_time = time.time() - time_window
+
+  cutoff_time = time.time() - TIME_WINDOW
 
   # Filter timestamps to only include those within the time window
   recent_timestamps = [t for t in arp_timestamps[src_ip] if t > cutoff_time]
@@ -76,8 +79,8 @@ def analyze_frequency(src_ip):  # Make sure to check the network onbeforehand to
   response_count = len(recent_timestamps)
 
   # If the response count exceeds a threshold, log an alert
-  if response_count > 5:  # Example threshold
-    alert_message = f"[ALERT] High frequency of ARP responses from {src_ip}: {response_count} responses in the last {time_window} seconds"
+  if response_count > ARP_RESPONSE_THRESHOLD:  # Example threshold
+    alert_message = f"[ALERT] High frequency of ARP responses from {src_ip}: {response_count} responses in the last {TIME_WINDOW} seconds"
     print(alert_message)
     logging.warning(alert_message)
 
