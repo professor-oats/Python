@@ -41,7 +41,7 @@ def main():
       print("Launching crypto_tool help menu...\n")
       subprocess.run(["python", "-m", "CryptoTool.crypto_tool", "--help"])
 
-      action = input("crypto_tool ")
+      action = input("crypto_tool_> ")
 
       # Run the crypto_tool with the user's inputs
       print("Running crypto_tool with args:", action)
