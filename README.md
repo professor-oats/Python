@@ -83,7 +83,10 @@ You will be greeted with a menu where each highlighted character will be the inp
 
 packetpapi - Scripts for package sniffing, manipulation and spoofing <br/>
 Oat's Nmapper - Wrapper for Nmap with multithread support <br/>
-crypto_tool - Script for file encryption/decryption with password option <br/>
+crypto_tool - Script for file encryption/decryption with password option - (See explicit usage ITHS_Labb2 above) <br/>
+
+`crypto_tool_> [args]`
+
 simple_fileserver - Host a file server on port 9999 to easily share any logs or other files of choice
 
 
