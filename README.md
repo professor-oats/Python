@@ -13,7 +13,7 @@ Scripts related to generic networking. Testing some websocketing and more.
 Oat's Nmapper - A kind of wrapper for nmap.
 
 ### Tested on systems
-* FreeBSD
+* FreeBSD 14.1-RELEASE
 
 ### Usage
 Run the script with the permissions you'd want to run nmap, e.g.:<br/>
@@ -66,3 +66,23 @@ You can also generate a new key that is to be used for encryption/decryption by 
 
 can be used to encrypt on the fly: <br/>
 `python crypto_tool.py -g keyname -e [filetoencrypt]`
+
+## Project1
+Project for exam in vocational education course Programming for Pentesters
+It's a toolbox with a mix of scripts from earlier assignments and also a couple of new ones
+
+### Tested on systems
+* FreeBSD 14.1-RELEASE
+
+### Usage
+Run the mainscript with the permissions you need to analyze network packets : <br/>
+`sudo python oatstools.py` <br/>
+
+You will be greeted with a menu where each highlighted character will be the input choice: <br/>
+packetpapi - Scripts for package sniffing, manipulation and spoofing <br/>
+Oat's Nmapper - Wrapper for Nmap with multithread support <br/>
+crypto_tool - Script for file encryption/decryption with password option <br/>
+simple_fileserver - Host a file server on port 9999 to easily share any logs or other files of choice
+
+
+
