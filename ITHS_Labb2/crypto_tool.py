@@ -178,7 +178,7 @@ def main():
     type=str,
     nargs='?',  # Optional argument
     const='my_sym.key',  # Default value if no file is provided
-    help='Generate a new key for encryption/decryption (optionally provide a file name)'
+    help='Generate a new key for encryption/decryption (optionally provide a key name)'
   )
   parser.add_argument(
     '--max-decryptions',
