@@ -4,6 +4,8 @@ from scapy.all import sniff
 from collections import defaultdict
 import logging
 import time
+import signal
+import sys
 
 logging.basicConfig(filename='arp_monitor.log', level=logging.INFO, format='%(asctime)s - %(message)s')
 
@@ -16,7 +18,7 @@ ttl_mapping = {}
 
 # Construction of known_devices dict for fine grain checking
 known_devices = {
-    '192.168.10.1': 'ff:ff:ff:ff:ff:ff',  # Example known gateway MAC
+    '192.168.10.1': 'c4:ea:1d:0c:7d:92',  # Example known gateway MAC - Currently using homerouter here
     # Add more known devices here
 }
 
