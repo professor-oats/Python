@@ -79,7 +79,7 @@ def main():
                                                "Enclose the match in quotes"
                                    "Default: regexmatch r'\r' (carriage return), replace_text=''")
   parser.add_argument("directory", help="Path to the directory or a single file to search in")
-  parser.add_argument("regex_pattern", nargs='?', default=r'\', help="The regex pattern to search for")
+  parser.add_argument("regex_pattern", nargs='?', default=r'\^M', help="The regex pattern to search for")
   parser.add_argument("replacement_text", nargs='?', default='\n', help="The text to replace the pattern with")
   parser.add_argument("-r", action="store_true", help="Enable regex replacement mode:"
                                                       "'text_to_match' 'text_to_replace_with' (Leave empty replace for remove)")
