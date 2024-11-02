@@ -5,7 +5,6 @@ import json
 
 BACKUP_FILE = "replacement.bk"
 
-
 def replace_in_files(in_path, in_regex_pattern, in_replacement_text, backup=False):
   # Compile the regex pattern for efficiency
   pattern = re.compile(in_regex_pattern)
@@ -31,25 +30,32 @@ def replace_in_files(in_path, in_regex_pattern, in_replacement_text, backup=Fals
     print(f"Backup saved to {BACKUP_FILE}")
 
 
-def process_file(file_path, pattern, changes, replacement_text, backup):
-  # Read the content of the file
-  with open(file_path, 'r', encoding='utf-8') as file:
-    content = file.read()
+def process_file(in_file_path, in_pattern, in_changes, in_replacement_text, backup):
+  # Attempt to read the content of the file with UTF-8 encoding
+  try:
+    with open(in_file_path, 'r', encoding='utf-8') as file:
+      content = file.read()
+  except UnicodeDecodeError:
+    print(f"Skipping {in_file_path}: Cannot decode as UTF-8.")
+    return  # Skip this file if it can't be decoded as UTF-8
+  except Exception as e:
+    print(f"Error reading {in_file_path}: {e}")
+    return  # Handle other potential errors gracefully
 
   # Check if there's a match in the file
-  if pattern.search(content):
+  if in_pattern.search(content):
     # Save the original content in changes if backup is enabled
     if backup:
-      changes[file_path] = content
+      in_changes[in_file_path] = content
 
     # Replace all occurrences of the regex pattern
-    modified_content = pattern.sub(replacement_text, content)
+    modified_content = in_pattern.sub(in_replacement_text, content)
 
     # Write the modified content back to the file
-    with open(file_path, 'w', encoding='utf-8') as file:
+    with open(in_file_path, 'w', encoding='utf-8') as file:
       file.write(modified_content)
 
-    print(f"Updated file: {file_path}")
+    print(f"Updated file: {in_file_path}")
 
 
 def undo_changes():
@@ -79,7 +85,7 @@ def main():
                                                "Enclose the match in quotes"
                                    "Default: regexmatch r'\r' (carriage return), replace_text=''")
   parser.add_argument("directory", help="Path to the directory or a single file to search in")
-  parser.add_argument("regex_pattern", nargs='?', default=r'\^M', help="The regex pattern to search for")
+  parser.add_argument("regex_pattern", nargs='?', default=r'\', help="The regex pattern to search for")
   parser.add_argument("replacement_text", nargs='?', default='\n', help="The text to replace the pattern with")
   parser.add_argument("-r", action="store_true", help="Enable regex replacement mode:"
                                                       "'text_to_match' 'text_to_replace_with' (Leave empty replace for remove)")
