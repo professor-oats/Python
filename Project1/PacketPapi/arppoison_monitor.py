@@ -26,47 +26,47 @@ ARP_RESPONSE_THRESHOLD = 4  # Change to wanted threshold
 TIME_WINDOW = 10  # Change time window in seconds to check the threshold
 
 def detect_suspicious_arp(packet):
-    if packet.haslayer(ARP) and packet[ARP].op == 2:  # ARP response
-        src_ip = packet[ARP].psrc
-        src_mac = packet[ARP].hwsrc
+  if packet.haslayer(ARP) and packet[ARP].op == 2:  # ARP response
+    src_ip = packet[ARP].psrc
+    src_mac = packet[ARP].hwsrc
 
-        # Print ARP response
-        print(f"ARP response from {src_ip} - MAC {src_mac}")
+    # Print ARP response
+    print(f"ARP response from {src_ip} - MAC {src_mac}")
 
-        # Log the ARP response
-        logging.info(f"ARP response from {src_ip} - MAC {src_mac}")
+    # Log the ARP response
+    logging.info(f"ARP response from {src_ip} - MAC {src_mac}")
 
-        # Check for duplicate MAC addresses for the same IP
-        arp_table[src_ip].add(src_mac)
-        if len(arp_table[src_ip]) > 1:
-          alert_message = f"[ALERT] Duplicate MAC addresses for IP {src_ip}: {arp_table[src_ip]}"
-          print(alert_message)
-          logging.warning(alert_message)
+    # Check for duplicate MAC addresses for the same IP
+    arp_table[src_ip].add(src_mac)
+    if len(arp_table[src_ip]) > 1:
+      alert_message = f"[ALERT] Duplicate MAC addresses for IP {src_ip}: {arp_table[src_ip]}"
+      print(alert_message)
+      logging.warning(alert_message)
 
-        # Use for fine grain checking for unusual IP-MAC mappings
-        #if src_ip in known_devices and known_devices[src_ip] != src_mac:
-         # alert_message = f"[ALERT] Suspicious MAC for known IP {src_ip}: {src_mac}"
-         # print(alert_message)
-         # logging.warning(alert_message)
+    # Use for fine grain checking for unusual IP-MAC mappings
+    #if src_ip in known_devices and known_devices[src_ip] != src_mac:
+      # alert_message = f"[ALERT] Suspicious MAC for known IP {src_ip}: {src_mac}"
+      # print(alert_message)
+      # logging.warning(alert_message)
 
-        # Track timestamps for frequency analysis
-        current_time = time.time()
-        arp_timestamps[src_ip].append(current_time)
+    # Track timestamps for frequency analysis
+    current_time = time.time()
+    arp_timestamps[src_ip].append(current_time)
 
-        # Analyze frequency of ARP responses over the last 10 seconds
-        analyze_frequency(src_ip)
+    # Analyze frequency of ARP responses over the last 10 seconds
+    analyze_frequency(src_ip)
 
-    if packet.haslayer(IP):
-      src_ip = packet[IP].src
-      ttl = packet[IP].ttl
+  if packet.haslayer(IP):
+    src_ip = packet[IP].src
+    ttl = packet[IP].ttl
 
-      # Check if the IP has been seen with a different TTL
-      if src_ip in ttl_mapping and ttl_mapping[src_ip] != ttl:
-        alert_message = f"[ALERT] TTL anomaly detected for {src_ip}. Previous TTL: {ttl_mapping[src_ip]}, Current TTL: {ttl}"
-        print(alert_message)
-        logging.warning(alert_message)
-      else:
-        ttl_mapping[src_ip] = ttl
+    # Check if the IP has been seen with a different TTL
+    if src_ip in ttl_mapping and ttl_mapping[src_ip] != ttl:
+      alert_message = f"[ALERT] TTL anomaly detected for {src_ip}. Previous TTL: {ttl_mapping[src_ip]}, Current TTL: {ttl}"
+      print(alert_message)
+      logging.warning(alert_message)
+    else:
+      ttl_mapping[src_ip] = ttl
 
 
 def analyze_frequency(src_ip):  # Make sure to check the network onbeforehand to set appropriate thresholds
