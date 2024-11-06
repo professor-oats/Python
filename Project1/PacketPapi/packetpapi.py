@@ -1,6 +1,8 @@
 from . import multipleMACdetect
 from . import arppoison_monitor
+from . import gendict_knowndevices
 from . import mitm_arp
+from . import packetsniffer
 from scapy.layers.l2 import getmacbyip, get_if_hwaddr
 from scapy.all import conf
 import multiprocessing
@@ -15,10 +17,13 @@ BANNER = """
 CATEGORIES = """
 \033[1m\033[95mOFFENSIVE SCRIPTS\033[0m
 [\033[97mC\033[0m]ustom MitM ARP - Construct a MitM between two network devices
+[\033[97mP\033[0m]acketSniffer - Use on the interface where the MitM is positioned
+
 
 \033[1m\033[95mDEFENSIVE SCRIPTS\033[0m
 [\033[97mA\033[0m]RP-poison monitor - MitM mitigate
 [\033[97mM\033[0m]ultiple MAC detect - MitM mitigate
+[\033[97mG\033[0m]enDict KnownDevices - Complement ARP cache by generating dict of known network devices
 
 \033[1m\033[95mMENU COMMANDS\033[0m
 [\033[97mB\033[0m]ack"""
@@ -76,6 +81,9 @@ def main():
         )
         mitm_arp_process.start()
 
+      elif userchoice.strip().lower() == "p":
+        packetsniffer.sniffing_process()
+
       elif userchoice.strip().lower() == "a":
         try:
           arppoison_monitor.main()
@@ -84,6 +92,9 @@ def main():
 
       elif userchoice.strip().lower() == "m":
         multipleMACdetect.main()
+
+      elif userchoice.strip().lower() == "g":
+        gendict_knowndevices.main()
 
       elif userchoice.strip().lower() == "b":
         if mitm_arp_process and mitm_arp_process.is_alive():
