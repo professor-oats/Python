@@ -6,25 +6,25 @@ import json
 
 
 def arp_scan(in_target_ip_range):
-    # Create an ARP request packet
-    arp = ARP(pdst=in_target_ip_range)
-    # Create an Ethernet frame
-    ether = Ether(dst="ff:ff:ff:ff:ff:ff")  ## Use broadcast
-    # Combine ARP and Ethernet frame
-    packet = ether / arp
+  # Create an ARP request packet
+  arp = ARP(pdst=in_target_ip_range)
+  # Create an Ethernet frame
+  ether = Ether(dst="ff:ff:ff:ff:ff:ff")  ## Use broadcast
+  # Combine ARP and Ethernet frame
+  packet = ether / arp
 
-    # Send the packet and receive the response
-    result = srp(packet, timeout=3, verbose=False)[0]
+  # Send the packet and receive the response
+  result = srp(packet, timeout=3, verbose=False)[0]
 
-    # Dictionary to store known devices
-    known_devices = {}
+  # Dictionary to store known devices
+  known_devices = {}
 
-    # Process the responses
-    for sent, received in result:
-        # Store the IP and MAC address in the dictionary
-        known_devices[received.psrc] = received.hwsrc
+  # Process the responses
+  for sent, received in result:
+    # Store the IP and MAC address in the dictionary
+    known_devices[received.psrc] = received.hwsrc
 
-    return known_devices
+  return known_devices
 
 def main():
   # Set the target IP range for the scan
