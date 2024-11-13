@@ -95,26 +95,15 @@ def scrape_page(in_url, in_quick_clone="no"):
     os.makedirs(directory_name)
 
   if in_quick_clone == "yes":
-    wget_command = ['wget', '--user-agent', 'Mozilla/5.0', '--recursive',
-               '--no-parent', '-l1', in_url, '-P', directory_name]
-  else:  # Default to "no" for slower cloning
-    wget_command = ['wget', '--user-agent', 'Mozilla/5.0', '--recursive',
-               '--limit-rate=50k', '--no-parent', '-l1', '--wait=2', '--random-wait',
-               in_url, '-P', directory_name]
+    subprocess.run(['wget', '--user-agent', 'Mozilla/5.0', '--recursive',
+                                    '--no-parent', '-l1',
+                                    in_url, '-P', directory_name])
 
-  # Execute the command and capture stdout and stderr
-  scrape_result = subprocess.run(
-    wget_command, stderr=subprocess.PIPE, text=True
-  )
-
-  if scrape_result.returncode != 0:
-    print(f"Error while scraping {in_url}")
-    print("Command executed:", ' '.join(wget_command))
-    print("Exit status:", scrape_result.returncode)
-    print("Error output:", scrape_result.stderr)
-    return  # Return to mainscript on error
+  # Let us add a quicker cloning if in hurry on the network
   else:
-    print(f"Scraping completed successfully for {in_url}")
+    subprocess.run(['wget', '--user-agent', 'Mozilla/5.0', '--recursive',
+                  '--limit-rate=50k', '--no-parent', '-l1', '--wait=2', '--random-wait',
+                    in_url, '-P', directory_name])
 
 
 def host_local_decoy_https_server(in_cert_file, in_key_file):
@@ -122,11 +111,12 @@ def host_local_decoy_https_server(in_cert_file, in_key_file):
   server_address = ('', 443)
   https_server = http.server.HTTPServer(server_address, InjectRedirectHandler)
 
-  # Wrap server with SSL (self-signed certificate)
-  https_server.socket = ssl.wrap_socket(https_server.socket,
-                                        in_cert_file,
-                                        in_key_file,
-                                        server_side=True)
+  # Create SSL context
+  context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+  context.load_cert_chain(certfile=in_cert_file, keyfile=in_key_file)
+
+  # Wrap server socket with the context
+  https_server.socket = context.wrap_socket(https_server.socket, server_side=True)
 
   print("HTTPS server with JavaScript redirect running on port 443...")
   https_server.serve_forever()
@@ -149,19 +139,11 @@ def main(in_url, in_port, in_quick_clone):
   signal.signal(signal.SIGINT, signal.SIG_IGN)
   port = in_port
 
-  cert_pem, key_pem = gen_selfsigned_cert.create_self_signed_cert(domain)
+  gen_selfsigned_cert.create_self_signed_cert(domain)
   while not cert_and_key_file_exist("cert.pem", "key.pem"):  ## Easy inwait of cert and key generate
     time.sleep(2)
 
-  # Start the HTTPS server thread
-  https_thread = threading.Thread(target=host_local_decoy_https_server, args=(cert_pem, key_pem))
-  https_thread.daemon = True
-  https_thread.start()
-
-  # Start the HTTP server thread
-  http_thread = threading.Thread(target=host_local_decoy_http_server, args=(port,))
-  http_thread.daemon = True
-  http_thread.start()
+  host_local_decoy_https_server("cert.pem", "key.pem")
 
 
 if __name__ == '__main__':

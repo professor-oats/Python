@@ -1,7 +1,6 @@
 from cryptography.x509 import Name, NameOID, CertificateBuilder, SubjectAlternativeName, DNSName, NameAttribute
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import datetime
@@ -59,4 +58,4 @@ def create_self_signed_cert(in_domain):
   with open(f"key.pem", "wb") as key_file:
     key_file.write(key_pem)
 
-  return cert_pem, key_pem
+  return

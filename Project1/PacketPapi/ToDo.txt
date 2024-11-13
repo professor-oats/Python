@@ -1,12 +1,16 @@
 # In current form the wget won't resolve the DNS to the site from attacker host properly
 # possibly since it listens for DNS requests with the sniffing process on port 53.
-
-# Possible solution: See if we can go more finegrain in the packet filtering so it don't interfere
-# with the attacking machines own DNS lookup. 
-# If not we may have to wget the site first and host servers before we start to DNS poision
-# Thinking of it that may be the best thing to do since we would like the victum unaware of the poison
-# as much as possible.
+Sol - Rearranged the logic so we start servers before trafficing on port 53,
+udp shall be unbound but still things go sluggish when sniffing and doing own DNS queries. Perhaps some stack push or something
 
 # We have to ensure that the stripping and redirects works well and that
 # both http and https servers run properly and are terminated correctly
 # by their threads. Also test so the self_signed perm works fluently for the https connection
+
+Progress - Have managed to get a fully functioning https server now with the self cert
+however there is showing a warning for the https site instead of redirecting to http connection
+Also encounter JS inject error, so I think I will test through browser redirect.
+Also, to possibly circumvent the unsafe site warning we could try to hack
+some way so the victim ends up on the http connection without any ssl missing warning 
+due to native http.
+Could try a proper scapy sniff + SSL strip on the request if redirect won't work
