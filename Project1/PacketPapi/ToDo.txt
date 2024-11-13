@@ -1,0 +1,12 @@
+# In current form the wget won't resolve the DNS to the site from attacker host properly
+# possibly since it listens for DNS requests with the sniffing process on port 53.
+
+# Possible solution: See if we can go more finegrain in the packet filtering so it don't interfere
+# with the attacking machines own DNS lookup. 
+# If not we may have to wget the site first and host servers before we start to DNS poision
+# Thinking of it that may be the best thing to do since we would like the victum unaware of the poison
+# as much as possible.
+
+# We have to ensure that the stripping and redirects works well and that
+# both http and https servers run properly and are terminated correctly
+# by their threads. Also test so the self_signed perm works fluently for the https connection
