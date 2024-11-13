@@ -67,7 +67,7 @@ You can also generate a new key that is to be used for encryption/decryption by 
 can be used to encrypt on the fly: <br/>
 `python crypto_tool.py -g keyname -e [filetoencrypt]`
 
-## Project1
+## Project1 - Will make a more verbose guide when the main functonalities are all set
 Project for exam in vocational education course Programming for Pentesters
 It's a toolbox with a mix of scripts from earlier assignments and also a couple of new ones
 
