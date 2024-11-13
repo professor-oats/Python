@@ -74,7 +74,7 @@ def can_scrape(in_url):
 
 
 # Main scraping function
-def scrape_page(in_url):
+def scrape_page(in_url, in_quick_clone="no"):
   # First, check if scraping is allowed
  # if not can_scrape(in_url):
   #  print(f"Scraping is not allowed by robots.txt on {in_url}")
@@ -94,14 +94,27 @@ def scrape_page(in_url):
   if not os.path.exists(directory_name):
     os.makedirs(directory_name)
 
-  scrape_result = subprocess.run(['wget', '--user-agent', 'Mozilla/5.0', '--recursive',
-                  '--limit-rate=50k', '--no-parent', '-l1', '--wait=2', '--random-wait',
-                    in_url, '-P', directory_name])
+  if in_quick_clone == "yes":
+    wget_command = ['wget', '--user-agent', 'Mozilla/5.0', '--recursive',
+               '--no-parent', '-l1', in_url, '-P', directory_name]
+  else:  # Default to "no" for slower cloning
+    wget_command = ['wget', '--user-agent', 'Mozilla/5.0', '--recursive',
+               '--limit-rate=50k', '--no-parent', '-l1', '--wait=2', '--random-wait',
+               in_url, '-P', directory_name]
 
-  # Return on scrape error
+  # Execute the command and capture stdout and stderr
+  scrape_result = subprocess.run(
+    wget_command, stderr=subprocess.PIPE, text=True
+  )
+
   if scrape_result.returncode != 0:
     print(f"Error while scraping {in_url}")
-    return
+    print("Command executed:", ' '.join(wget_command))
+    print("Exit status:", scrape_result.returncode)
+    print("Error output:", scrape_result.stderr)
+    return  # Return to mainscript on error
+  else:
+    print(f"Scraping completed successfully for {in_url}")
 
 
 def host_local_decoy_https_server(in_cert_file, in_key_file):
@@ -130,9 +143,9 @@ def host_local_decoy_http_server(port=80):
 
 
 # Example usage
-def main(in_url, in_port):
+def main(in_url, in_port, in_quick_clone):
   # Oh boy ...
-  scrape_page(in_url)
+  scrape_page(in_url, in_quick_clone)
   signal.signal(signal.SIGINT, signal.SIG_IGN)
   port = in_port
 
@@ -152,4 +165,4 @@ def main(in_url, in_port):
 
 
 if __name__ == '__main__':
-  main(in_url="", in_port=80)
+  main(in_url="", in_port=80, in_quick_clone="no")
