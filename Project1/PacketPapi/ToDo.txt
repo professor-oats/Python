@@ -17,3 +17,8 @@ Could try a proper scapy sniff + SSL strip on the request if redirect won't work
 
 After studying more about DNS poison and tools like Bettercap
 it will perhaps be possible to skip the whole SSL overhead and just have a http server running
+
+Update 2024-11-18
+Testing to see if redirect to http will happen just through poison and having available
+server on port 80 up.
+It does not so we will develop a technique to redirect
