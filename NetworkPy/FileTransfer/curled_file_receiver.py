@@ -1,5 +1,5 @@
 ## When posting use command
-## curl -X POST "file=@/path/to/file" http://192.168.10.150:8080
+## curl -F "file=@/path/to/file" http://192.168.10.150:8080
 ## Adjust for your machines IP and port
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
