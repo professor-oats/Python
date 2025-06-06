@@ -3,6 +3,7 @@
 # Remember to set
 # <form class="login-form" action="{{ url_for('login') }}" method="post" id="login">
 # in the .html you are serving
+# Good practice is to set required in the <input> for username/password
 
 from flask import Flask, request, redirect, send_file, render_template
 from datetime import datetime
