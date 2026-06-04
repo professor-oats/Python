@@ -44,6 +44,7 @@ def upload_file():
     if file.filename == "":
         return jsonify({"message": "No file selected"}), 400
 
+    # Yes, this is AI pasta, surprisingly it went with .zip. May fix later
     if not file.filename.lower().endswith(".zip"):
         return jsonify({"message": "Only ZIP files allowed"}), 400
 
